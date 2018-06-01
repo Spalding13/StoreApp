@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.example.android.storeapp.EditorActivity">
+
+    <EditText
+        android:id="@+id/edit_text_name"
+        style="@style/EditorFieldStyle"
+        android:hint="@string/hint_name"
+        android:inputType="textCapWords" />
+
+    <EditText
+        android:id="@+id/edit_text_price"
+        style="@style/EditorFieldStyle"
+        android:hint="@string/hint_price"
+        android:inputType="numberDecimal" />
+    <EditText
+        android:id="@+id/edit_text_quantity"
+        android:hint="@string/hint_quantity"
+        style="@style/EditorFieldStyle"
+        android:inputType="numberDecimal"
+        />
+    <EditText
+        android:id="@+id/edit_text_supplier"
+        style="@style/EditorFieldStyle"
+        android:hint="@string/hint_supplier_name"
+        android:inputType="textCapWords" />
+    <EditText
+        android:id="@+id/edit_text_phone"
+        style="@style/EditorFieldStyle"
+        android:hint="@string/hint_supplier_number"
+        android:inputType="phone" />
+
+    <Button
+        android:id="@+id/enter_product_button"
+        android:layout_margin="8dp"
+        android:text="@string/button_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"/>
+</LinearLayout>
