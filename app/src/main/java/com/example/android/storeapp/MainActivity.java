@@ -59,43 +59,50 @@ public class MainActivity extends AppCompatActivity {
                 ProductEntry.COLUMN_QUANTITY, ProductEntry.COLUMN_SUPPLIER_NAME,
                 ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER};
 
+
         Cursor c = db.query(ProductEntry.TABLE_NAME, projection,
                 null, null, null,
                 null, null);
 
+        try {
+            if (!c.moveToNext()) {
+                String noProducts = getString(R.string.product_text_absent);
+                mProductData.append("\n" + "\n" + noProducts);
+            }
 
+            c.moveToPosition(-1);
 
-        if(!c.moveToNext()){
-            String noProducts = getString(R.string.product_text_absent);
-            mProductData.append("\n" + "\n" + noProducts);
-        }
+            while (c.moveToNext()) {
 
-        c.moveToPosition(-1);
+                int nameIndex = c.getColumnIndex(ProductEntry.COLUMN_NAME);
+                String name = c.getString(nameIndex);
 
-        while (c.moveToNext()){
+                int priceIndex = c.getColumnIndex(ProductEntry.COLUMN_PRICE);
+                int price = c.getInt(priceIndex);
 
-            int nameIndex = c.getColumnIndex(ProductEntry.COLUMN_NAME);
-            String name = c.getString(nameIndex);
+                int quantityIndex = c.getColumnIndex(ProductEntry.COLUMN_QUANTITY);
+                int quantity = c.getInt(quantityIndex);
 
-            int priceIndex = c.getColumnIndex(ProductEntry.COLUMN_PRICE);
-            int price = c.getInt(priceIndex);
+                int supplierIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_NAME);
+                String supplier = c.getString(supplierIndex);
 
-            int quantityIndex = c.getColumnIndex(ProductEntry.COLUMN_QUANTITY);
-            int quantity = c.getInt(quantityIndex);
+                int phoneIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER);
+                String phone = c.getString(phoneIndex);
 
-            int supplierIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_NAME);
-            String supplier =c.getString(supplierIndex);
+                mProductData.append("\n" + "\n" + " " + name + " " + price +
+                        " " + quantity + " " + supplier + " " + phone);
 
-            int phoneIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER);
-            String phone = c.getString(phoneIndex);
-
-            mProductData.append("\n" + "\n" + " " + name + " " + price +
-            " " + quantity + " " + supplier + " " + phone);
-
+            }
+        } catch (Exception e) {
+            Log.e(LOGTAG, "Cursor could not retrieve data");
+        } finally {
+            if (c != null) {
+                c.close();
+            }
         }
     }
 
-    private void insertTestData(){
+    private void insertTestData() {
         ProductDbHelper mDbHelper = new ProductDbHelper(this);
 
         SQLiteDatabase database = mDbHelper.getWritableDatabase();
@@ -109,7 +116,6 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             database.insert(ProductEntry.TABLE_NAME, null, values);
-
         } catch (SQLException e) {
             Log.e(LOGTAG, "Error inserting column values in " + ProductEntry.TABLE_NAME + " table");
         }
