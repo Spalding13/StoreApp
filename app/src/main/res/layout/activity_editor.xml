@@ -9,36 +9,84 @@
     <EditText
         android:id="@+id/edit_text_name"
         style="@style/EditorFieldStyle"
+        android:drawableLeft="@drawable/baseline_assignment_ind_black_18dp"
         android:hint="@string/hint_name"
         android:inputType="textCapWords" />
 
     <EditText
         android:id="@+id/edit_text_price"
         style="@style/EditorFieldStyle"
+        android:drawableLeft="@drawable/baseline_attach_money_black_18dp"
         android:hint="@string/hint_price"
         android:inputType="numberDecimal" />
+
     <EditText
         android:id="@+id/edit_text_quantity"
-        android:hint="@string/hint_quantity"
         style="@style/EditorFieldStyle"
-        android:inputType="numberDecimal"
-        />
+        android:drawableLeft="@drawable/baseline_list_black_18dp"
+        android:hint="@string/hint_quantity"
+        android:inputType="numberDecimal" />
+
     <EditText
         android:id="@+id/edit_text_supplier"
         style="@style/EditorFieldStyle"
+        android:drawableLeft="@drawable/baseline_inbox_black_18dp"
         android:hint="@string/hint_supplier_name"
         android:inputType="textCapWords" />
+
     <EditText
         android:id="@+id/edit_text_phone"
         style="@style/EditorFieldStyle"
+        android:drawableLeft="@drawable/baseline_local_phone_black_18dp"
         android:hint="@string/hint_supplier_number"
         android:inputType="phone" />
 
-    <Button
-        android:id="@+id/enter_product_button"
-        android:layout_margin="8dp"
-        android:text="@string/button_text"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="32dp"
+        android:orientation="vertical"
+        android:padding="8dp">
+
+        <TextView
+            style="@style/EditorFieldStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/adjust_quantity_text" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:padding="8dp">
+
+            <ImageButton
+                android:id="@+id/decrease_quantity"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginRight="24dp"
+                android:background="@color/colorPrimary"
+                android:clickable="true"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/baseline_exposure_neg_1_white_18dp"
+
+                />
+
+            <ImageButton
+                android:id="@+id/increase_quantity"
+                android:layout_width="45dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="24dp"
+                android:background="@color/colorPrimary"
+                android:clickable="true"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/baseline_exposure_plus_1_white_18dp"
+
+                />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

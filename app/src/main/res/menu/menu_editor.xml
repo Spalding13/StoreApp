@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context=".EditorActivity">
+
+    <item
+        android:id="@+id/action_save"
+        android:title="Save"
+        android:icon="@drawable/baseline_done_outline_white_18dp"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/action_delete"
+        android:title="Delete"
+        app:showAsAction="never"
+        android:icon="@drawable/baseline_delete_outline_black_18dp"/>
+
+    <item
+        android:id="@+id/action_order"
+        android:title="Order "
+        app:showAsAction="never"
+        android:icon="@drawable/baseline_local_phone_black_18dp"/>
+
+</menu>

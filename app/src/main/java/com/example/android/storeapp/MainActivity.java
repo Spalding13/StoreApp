@@ -1,106 +1,113 @@
 package com.example.android.storeapp;
 
+import android.app.LoaderManager;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.Loader;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.Toast;
 
 import com.example.android.storeapp.data.ProductContract.ProductEntry;
+import com.example.android.storeapp.data.ProductCursorAdapter;
 import com.example.android.storeapp.data.ProductDbHelper;
 
+import static android.view.ViewGroup.FOCUS_BLOCK_DESCENDANTS;
+import static com.example.android.storeapp.data.ProductContract.BASE_CONTENT_URI;
+import static com.example.android.storeapp.data.ProductContract.CONTENT_URI;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_NAME;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_PRICE;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_QUANTITY;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry._ID;
 
-public class MainActivity extends AppCompatActivity {
-    private TextView mProductData;
+
+public class MainActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+    private int LOADER_ID = 1;
     private String LOGTAG = MainActivity.class.getName();
     private Context mContext = this;
+    private ProductCursorAdapter mProductAdapter;
+    private Button mSaleButton;
+
+
+    String[] mProjection = {_ID,
+            COLUMN_NAME, COLUMN_PRICE,
+            ProductEntry.COLUMN_QUANTITY, ProductEntry.COLUMN_SUPPLIER_NAME,
+            ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        mProductData = (TextView) findViewById(R.id.product_data_text);
-
-
-        FloatingActionButton fab;
-        fab = findViewById(R.id.floating_intent_action_button);
+        mSaleButton = (Button) findViewById(R.id.sale_button);
+        LinearLayout emptyView = (LinearLayout)findViewById(R.id.empty_view);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.floating_intent_action_button);
         fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Enter your product.", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                                   @Override
+                                   public void onClick(View view) {
+                                       Intent intent = new Intent(MainActivity.this, EditorActivity.class);
+                                       startActivity(intent);
+                                   }
+                               }
+        );
+        getLoaderManager().initLoader(LOADER_ID, null, this);
+        ListView listView = (ListView) findViewById(R.id.list);
+        listView.setDescendantFocusability(FOCUS_BLOCK_DESCENDANTS);
+        listView.setEmptyView(emptyView);
+        mProductAdapter = new ProductCursorAdapter(this, null);
+        listView.setAdapter(mProductAdapter);
 
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long id) {
                 Intent intent = new Intent(MainActivity.this, EditorActivity.class);
+                Uri currentPetUri = ContentUris.withAppendedId(CONTENT_URI, id);
+                intent.setData(currentPetUri);
                 startActivity(intent);
             }
         });
-        displayData();
     }
 
-    private void displayData() {
-        mProductData.setText(R.string.product_text);
-
-        ProductDbHelper mDbHelper = new ProductDbHelper(this);
-        SQLiteDatabase db = mDbHelper.getReadableDatabase();
-
-        String[] projection = {ProductEntry.COLUMN_NAME, ProductEntry.COLUMN_PRICE,
-                ProductEntry.COLUMN_QUANTITY, ProductEntry.COLUMN_SUPPLIER_NAME,
-                ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER};
-
-
-        Cursor c = db.query(ProductEntry.TABLE_NAME, projection,
-                null, null, null,
-                null, null);
-
-        try {
-            if (!c.moveToNext()) {
-                String noProducts = getString(R.string.product_text_absent);
-                mProductData.append("\n" + "\n" + noProducts);
+    public void clickOnSale(View v, long id, int quantity) {
+        int i = quantity;
+        if (i == 0) {
+            Toast.makeText(this, getString(R.string.unsuccessful_sale),
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            i = i - 1;
+            Uri currentPetUri = ContentUris.withAppendedId(CONTENT_URI, id);
+            ContentValues values = new ContentValues();
+            {
+                values.put(COLUMN_QUANTITY, i);
             }
+            int rowsAffected = getContentResolver().update(currentPetUri, values, null, null);
 
-            c.moveToPosition(-1);
-
-            while (c.moveToNext()) {
-
-                int nameIndex = c.getColumnIndex(ProductEntry.COLUMN_NAME);
-                String name = c.getString(nameIndex);
-
-                int priceIndex = c.getColumnIndex(ProductEntry.COLUMN_PRICE);
-                int price = c.getInt(priceIndex);
-
-                int quantityIndex = c.getColumnIndex(ProductEntry.COLUMN_QUANTITY);
-                int quantity = c.getInt(quantityIndex);
-
-                int supplierIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_NAME);
-                String supplier = c.getString(supplierIndex);
-
-                int phoneIndex = c.getColumnIndex(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER);
-                String phone = c.getString(phoneIndex);
-
-                mProductData.append("\n" + "\n" + " " + name + " " + price +
-                        " " + quantity + " " + supplier + " " + phone);
-
-            }
-        } catch (Exception e) {
-            Log.e(LOGTAG, "Cursor could not retrieve data");
-        } finally {
-            if (c != null) {
-                c.close();
+            if (rowsAffected == 0) {
+                Toast.makeText(this, getString(R.string.unsuccessful_sale),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.successful_sale),
+                        Toast.LENGTH_SHORT).show();
             }
         }
     }
+
 
     private void insertTestData() {
         ProductDbHelper mDbHelper = new ProductDbHelper(this);
@@ -115,16 +122,15 @@ public class MainActivity extends AppCompatActivity {
         values.put(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER, "0879376294");
 
         try {
-            database.insert(ProductEntry.TABLE_NAME, null, values);
+            Uri uri = getContentResolver().insert(BASE_CONTENT_URI, values);
+            Log.v("MainActivity", "New row URI =  " + uri);
         } catch (SQLException e) {
             Log.e(LOGTAG, "Error inserting column values in " + ProductEntry.TABLE_NAME + " table");
         }
-        displayData();
     }
 
     public void deleteProductData() {
-        mContext.deleteDatabase(ProductDbHelper.DATABASE_NAME);
-        displayData();
+        getContentResolver().delete(BASE_CONTENT_URI, null, null);
     }
 
 
@@ -147,7 +153,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        displayData();
     }
 
     @Override
@@ -155,5 +160,26 @@ public class MainActivity extends AppCompatActivity {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
         return true;
+    }
+
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        return new CursorLoader(this,
+                BASE_CONTENT_URI,
+                mProjection,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        mProductAdapter.swapCursor(cursor);
+
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mProductAdapter.swapCursor(null);
     }
 }

@@ -1,105 +1,386 @@
 package com.example.android.storeapp;
 
+
+import android.app.Activity;
+import android.app.LoaderManager;
 import android.content.ContentValues;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
+import android.content.CursorLoader;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.Loader;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.NavUtils;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.text.TextUtils;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import com.example.android.storeapp.data.ProductContract.ProductEntry;
-import com.example.android.storeapp.data.ProductDbHelper;
 
-import java.io.IOException;
+import static com.example.android.storeapp.data.ProductContract.CONTENT_URI;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_NAME;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_PRICE;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_QUANTITY;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_SUPPLIER_NAME;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry._ID;
 
-public class EditorActivity extends AppCompatActivity {
-
+public class EditorActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+    private Uri mCurrentProduct;
+    private int LOADER_ID = 1;
     private EditText mNameEditText;
     private EditText mPriceEditText;
     private EditText mQiantityEditText;
     private EditText mSupplierEditText;
     private EditText mPhoneEditText;
-    private Button mButton;
+    private EditText mAdjustQuantity;
+    private ImageButton mPlusButton;
+    private ImageButton mMinusButton;
     private String LOGTAG = EditorActivity.class.getName();
+    private boolean mProductHasChanged = false;
+    private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View view, MotionEvent motionEvent) {
+            mProductHasChanged = true;
+            return false;
+        }
+    };
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_editor);
-
         mNameEditText = (EditText) findViewById(R.id.edit_text_name);
         mPriceEditText = (EditText) findViewById(R.id.edit_text_price);
         mQiantityEditText = (EditText) findViewById(R.id.edit_text_quantity);
         mSupplierEditText = (EditText) findViewById(R.id.edit_text_supplier);
         mPhoneEditText = (EditText) findViewById(R.id.edit_text_phone);
-        mButton = (Button) findViewById(R.id.enter_product_button);
+        mPlusButton = (ImageButton) findViewById(R.id.increase_quantity);
+        mMinusButton = (ImageButton) findViewById(R.id.decrease_quantity);
+        mCurrentProduct = getIntent().getData();
+        if (mCurrentProduct != null) {
+            setTitle(R.string.edit_product_title);
+            getLoaderManager().initLoader(LOADER_ID, null, this);
+        } else {
+            setTitle(R.string.enter_product_title);
+        }
 
-
-        mButton.setOnClickListener(new View.OnClickListener() {
+        mPlusButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                insertProduct();
-                Snackbar.make(view, "Product data saved.", Snackbar.LENGTH_SHORT)
-                        .setAction("Action", null).show();
-
+                AddOneToQuantity();
+                mProductHasChanged = true;
             }
         });
+        mMinusButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                RemoveOneToQuantity();
+                mProductHasChanged = true;
+            }
+        });
+
+        mNameEditText.setOnTouchListener(mTouchListener);
+        mPriceEditText.setOnTouchListener(mTouchListener);
+        mQiantityEditText.setOnTouchListener(mTouchListener);
+        mSupplierEditText.setOnTouchListener(mTouchListener);
+        mPhoneEditText.setOnTouchListener(mTouchListener);
     }
 
+    private void AddOneToQuantity() {
+        String previousValueString = mQiantityEditText.getText().toString();
+        int value;
+        if (previousValueString.isEmpty()) {
+            value = 0;
+        } else {
+            if (Integer.valueOf(previousValueString) < 0) {
+                Toast.makeText(this, getString(R.string.invalid_input),
+                        Toast.LENGTH_SHORT).show();
+                mQiantityEditText.setText("0");
+            }
+            value = Integer.parseInt(previousValueString);
+        }
+        mQiantityEditText.setText(String.valueOf(value + 1));
+    }
 
-    private void insertProduct() {
-        try {
-            String Name = mNameEditText.getText().toString().trim();
+    private void RemoveOneToQuantity() {
+        String previousValueString = mQiantityEditText.getText().toString();
+        int value = Integer.valueOf(previousValueString);
+        if (value == 0) {
+            Toast.makeText(this, getString(R.string.invalid_input),
+                    Toast.LENGTH_SHORT).show();
+            mQiantityEditText.setText("0");
+        } else {
+            if (previousValueString.isEmpty()) {
+                value = 0;
+            } else {
+                if (Integer.valueOf(previousValueString) < 0) {
+                    Toast.makeText(this, getString(R.string.invalid_input),
+                            Toast.LENGTH_SHORT).show();
+                    mQiantityEditText.setText("0");
+                }
+                value = Integer.parseInt(previousValueString);
+            }
+            mQiantityEditText.setText(String.valueOf(value - 1));
+        }
+    }
 
-            String PriceString = mPriceEditText.getText().toString().trim();
-            int Price = Integer.parseInt(PriceString);
+    private void showUnsavedChangesDialog(
+            DialogInterface.OnClickListener discardButtonClickListener) {
+        android.support.v7.app.AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage(R.string.unsaved_product_data);
+        builder.setPositiveButton(R.string.discard, discardButtonClickListener);
+        builder.setNegativeButton(R.string.keep, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
+        AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
 
-            String QuantityString = mQiantityEditText.getText().toString().trim();
-            int Quantity = Integer.parseInt(QuantityString);
+    private void saveProduct() {
 
-            String Supplier = mSupplierEditText.getText().toString().trim();
+        String name = mNameEditText.getText().toString().trim();
 
-            String PhoneString = mPhoneEditText.getText().toString().trim();
+        String price = mPriceEditText.getText().toString().trim();
 
+        String quantity = mQiantityEditText.getText().toString().trim();
 
-            ProductDbHelper mDbHelper = new ProductDbHelper(this);
+        String Supplier = mSupplierEditText.getText().toString().trim();
 
-            SQLiteDatabase database = mDbHelper.getWritableDatabase();
+        String PhoneString = mPhoneEditText.getText().toString().trim();
+
+        if (TextUtils.isEmpty(name) ||
+                TextUtils.isEmpty(Supplier) ||
+                TextUtils.isEmpty(PhoneString) ||
+                TextUtils.isEmpty(price) ||
+                TextUtils.isEmpty(PhoneString)) {
+            Toast.makeText(this, getString(R.string.need_input),
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            if (mCurrentProduct == null &&
+                    TextUtils.isEmpty(name) && TextUtils.isEmpty(price) &&
+                    TextUtils.isEmpty(quantity) &&
+                    TextUtils.isEmpty(Supplier) &&
+                    TextUtils.isEmpty(PhoneString)) {
+                return;
+            }
+
+            int Quantity = 0;
+            if (!TextUtils.isEmpty(quantity)) {
+                Quantity = Integer.parseInt(quantity);
+            }
+            int Price = 0;
+            if (!TextUtils.isEmpty(price)) {
+                Price = Integer.parseInt(price);
+            }
 
 
             ContentValues values = new ContentValues();
-            values.put(ProductEntry.COLUMN_NAME, Name);
+            values.put(ProductEntry.COLUMN_NAME, name);
             values.put(ProductEntry.COLUMN_PRICE, Price);
             values.put(ProductEntry.COLUMN_QUANTITY, Quantity);
             values.put(ProductEntry.COLUMN_SUPPLIER_NAME, Supplier);
             values.put(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER, PhoneString);
-            long newRowId = 0;
 
-            try {
-                newRowId = database.insert(ProductEntry.TABLE_NAME, null, values);
-            } catch (SQLException e) {
-                Log.e(LOGTAG, "Error inserting column values in " + ProductEntry.TABLE_NAME + " table");
-            }
+            if (mCurrentProduct == null) {
 
-            if (newRowId == -1) {
-                Toast.makeText(this, "Error with saving product", Toast.LENGTH_SHORT).show();
+                Uri newUri = getContentResolver().insert(CONTENT_URI, values);
+
+                if (newUri == null) {
+                    Toast.makeText(this, getString(R.string.failed_update),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, getString(R.string.successful_save),
+                            Toast.LENGTH_SHORT).show();
+                }
             } else {
-                Toast.makeText(this, "row id: " + newRowId, Toast.LENGTH_SHORT).show();
+
+                int rowsAffected = getContentResolver().update(mCurrentProduct, values, null, null);
+
+                if (rowsAffected == 0) {
+                    Toast.makeText(this, getString(R.string.failed_update),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, getString(R.string.successful_update),
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            finish();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_editor, menu);
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (!mProductHasChanged) {
+            super.onBackPressed();
+            return;
+        }
+        DialogInterface.OnClickListener discardButtonClickListener =
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        finish();
+                    }
+                };
+        showUnsavedChangesDialog(discardButtonClickListener);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_save:
+                saveProduct();
+                return true;
+
+            case R.id.action_delete:
+                showDeleteConfirmationDialog();
+                return true;
+
+            case R.id.action_order:
+                String phone = mPhoneEditText.getText().toString().trim();
+                if (TextUtils.isEmpty(phone)) {
+                    Toast.makeText(this, getString(R.string.need_input_phone), Toast.LENGTH_SHORT).show();
+                } else {
+                    if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions((Activity) this, new
+                                String[]{android.Manifest.permission.CALL_PHONE}, 0);
+                    } else {
+                        Intent intent = new Intent(Intent.ACTION_DIAL);
+                        intent.setData(Uri.parse("tel:" + phone));
+                        try {
+                            startActivity(intent);
+                        } catch (android.content.ActivityNotFoundException ex) {
+                            Toast.makeText(this, "Could not find an activity to place the call.", Toast.LENGTH_SHORT).show();
+                        }
+
+                    }
+                }
+                return true;
+            case android.R.id.home:
+                if (!mProductHasChanged) {
+                    NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                    return true;
+                }
+                DialogInterface.OnClickListener discardButtonClickListener =
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                NavUtils.navigateUpFromSameTask(EditorActivity.this);
+                            }
+                        };
+                showUnsavedChangesDialog(discardButtonClickListener);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
 
+    @Override
+    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
+        String[] projection = {_ID,
+                COLUMN_NAME, COLUMN_PRICE,
+                ProductEntry.COLUMN_QUANTITY, ProductEntry.COLUMN_SUPPLIER_NAME,
+                ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER};
+
+        return new CursorLoader(this,
+                mCurrentProduct,
+                projection,
+                null,
+                null,
+                null);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        if (cursor == null || cursor.getCount() < 1) {
+            return;
+        }
+        if (cursor.moveToFirst()) {
+            int nameColumnIndex = cursor.getColumnIndex(COLUMN_NAME);
+            int priceColumnIndex = cursor.getColumnIndex(COLUMN_PRICE);
+            int quantityColumnIndex = cursor.getColumnIndex(COLUMN_QUANTITY);
+            int supplierColumnIndex = cursor.getColumnIndex(COLUMN_SUPPLIER_NAME);
+            int phoneColumnIndex = cursor.getColumnIndex(COLUMN_SUPPLIER_PHONE_NUMBER);
+
+            String name = cursor.getString(nameColumnIndex);
+            String price = cursor.getString(priceColumnIndex);
+            int quanitity = cursor.getInt(quantityColumnIndex);
+            String supplier = cursor.getString(supplierColumnIndex);
+            String phone = cursor.getString(phoneColumnIndex);
+
+            mNameEditText.setText(name);
+            mPriceEditText.setText(price);
+            mQiantityEditText.setText(Integer.toString(quanitity));
+            mSupplierEditText.setText(supplier);
+            mPhoneEditText.setText(phone);
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mNameEditText.setText(null);
+        mPriceEditText.setText(null);
+        mQiantityEditText.setText(Integer.toString(0));
+        mSupplierEditText.setText(null);
+        mPhoneEditText.setText(null);
+    }
+
+    private void showDeleteConfirmationDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setMessage(R.string.delete_dialog);
+        builder.setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                deletePet();
+            }
+        });
+        builder.setNegativeButton(R.string.keep, new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                if (dialog != null) {
+                    dialog.dismiss();
+                }
+            }
+        });
+        android.app.AlertDialog alertDialog = builder.create();
+        alertDialog.show();
+    }
+
+
+    private void deletePet() {
+        if (mCurrentProduct != null) {
+
+            int rowsDeleted = getContentResolver().delete(mCurrentProduct, null, null);
+
+            if (rowsDeleted == 0) {
+                Toast.makeText(this, getString(R.string.unsuccessful_delete),
+                        Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, getString(R.string.successful_delete),
+                        Toast.LENGTH_SHORT).show();
             }
         }
-        catch (NumberFormatException e){
-            Log.e(LOGTAG,"Input error");
-            Toast.makeText(this, "Error with saving product", Toast.LENGTH_SHORT).show();
-            Snackbar.make(null, "Input error", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
-
-        }
+        finish();
     }
 }

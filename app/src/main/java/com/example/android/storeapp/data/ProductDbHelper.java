@@ -17,8 +17,8 @@ public class ProductDbHelper extends SQLiteOpenHelper {
             ProductEntry.TABLE_NAME + "(" +
             ProductEntry._ID + " INTEGER PRIMARY KEY" + "," +
             ProductEntry.COLUMN_NAME + " TEXT" + "," +
-            ProductEntry.COLUMN_PRICE + " TEXT" + "," +
-            ProductEntry.COLUMN_QUANTITY + " TEXT" + "," +
+            ProductEntry.COLUMN_PRICE + " INTEGER" + "," +
+            ProductEntry.COLUMN_QUANTITY + " INTEGER" + "," +
             ProductEntry.COLUMN_SUPPLIER_NAME + " TEXT" + "," +
             ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER + " TEXT" + ")" + ";" ;
 

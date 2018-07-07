@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.android.storeapp">
+    package="com.example.android.storeapp"
+    >
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <application
         android:allowBackup="true"
@@ -16,14 +18,19 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".EditorActivity"
-            android:parentActivityName=".MainActivity"
-            android:label="@string/title_activity_editor">
+        <activity
+            android:name=".EditorActivity"
+            android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.example.android.storeapp.MainActivity" />
 
         </activity>
+
+        <provider
+            android:name=".data.ProductProvider"
+            android:authorities="com.example.android.storeapp"
+            android:exported="false" />
     </application>
 
 </manifest>
