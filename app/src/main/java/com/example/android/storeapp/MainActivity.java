@@ -110,9 +110,6 @@ public class MainActivity extends AppCompatActivity implements LoaderManager.Loa
 
 
     private void insertTestData() {
-        ProductDbHelper mDbHelper = new ProductDbHelper(this);
-
-        SQLiteDatabase database = mDbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
         values.put(ProductEntry.COLUMN_NAME, "Adidas Ultra Boost");

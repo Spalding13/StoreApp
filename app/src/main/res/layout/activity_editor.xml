@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context="com.example.android.storeapp.EditorActivity">
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+    <ImageView
+        android:id="@+id/product_image"
+        android:layout_width="match_parent"
+        android:layout_height="350dp"
+        android:scaleType="fitCenter"
+        app:srcCompat="@drawable/ultra_boost" />
 
     <EditText
         android:id="@+id/edit_text_name"
@@ -40,6 +51,7 @@
         android:drawableLeft="@drawable/baseline_local_phone_black_18dp"
         android:hint="@string/hint_supplier_number"
         android:inputType="phone" />
+
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -90,3 +102,4 @@
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>
+</ScrollView>

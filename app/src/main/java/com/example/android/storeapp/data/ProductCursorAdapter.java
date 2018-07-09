@@ -3,6 +3,7 @@ package com.example.android.storeapp.data;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +12,7 @@ import android.widget.CursorAdapter;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import com.example.android.storeapp.EditorActivity;
 import com.example.android.storeapp.MainActivity;
 import com.example.android.storeapp.R;
 
@@ -48,13 +49,15 @@ public class ProductCursorAdapter extends CursorAdapter {
         String productName = cursor.getString(nameColumnIndex);
         String priceSummary = cursor.getString(summaryColumnIndex);
         final int quantity = cursor.getInt(quantityColumnIndex);
+        final long id = cursor.getLong(cursor.getColumnIndex(ProductContract.ProductEntry._ID));
+
 
         nameTextView.setText(productName);
         priceTextView.setText("Price: " + priceSummary + " $");
         quantityTextView.setText(String.valueOf("Quantity: " + quantity));
 
 
-      final long id = cursor.getLong(cursor.getColumnIndex(_ID));
+
       saleButton.setOnClickListener(new View.OnClickListener() {
           @Override
           public void onClick(View view) {

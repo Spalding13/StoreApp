@@ -4,6 +4,7 @@ package com.example.android.storeapp;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -18,20 +19,24 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.example.android.storeapp.data.ImagePicker;
 import com.example.android.storeapp.data.ProductContract.ProductEntry;
 
 import static com.example.android.storeapp.data.ProductContract.CONTENT_URI;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_NAME;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_PRICE;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_QUANTITY;
+import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_SUPPLIER_IMAGE;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_SUPPLIER_NAME;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER;
 import static com.example.android.storeapp.data.ProductContract.ProductEntry._ID;
@@ -47,6 +52,11 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
     private EditText mAdjustQuantity;
     private ImageButton mPlusButton;
     private ImageButton mMinusButton;
+    public ImageView mProductImage;
+    private static final int PICK_IMAGE_REQUEST = 0;
+    public Uri actualUri;
+    private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 1;
+    public Context mContext = this;
     private String LOGTAG = EditorActivity.class.getName();
     private boolean mProductHasChanged = false;
     private View.OnTouchListener mTouchListener = new View.OnTouchListener() {
@@ -69,12 +79,14 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mPhoneEditText = (EditText) findViewById(R.id.edit_text_phone);
         mPlusButton = (ImageButton) findViewById(R.id.increase_quantity);
         mMinusButton = (ImageButton) findViewById(R.id.decrease_quantity);
+        mProductImage = (ImageView) findViewById(R.id.product_image);
         mCurrentProduct = getIntent().getData();
         if (mCurrentProduct != null) {
             setTitle(R.string.edit_product_title);
             getLoaderManager().initLoader(LOADER_ID, null, this);
         } else {
             setTitle(R.string.enter_product_title);
+            mProductImage.setImageResource(R.drawable.add_picture_icon);
         }
 
         mPlusButton.setOnClickListener(new View.OnClickListener() {
@@ -91,12 +103,19 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
                 mProductHasChanged = true;
             }
         });
+        mProductImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ImagePicker.tryToOpenImageSelector(getBaseContext(), EditorActivity.this);
+            }
+        });
 
         mNameEditText.setOnTouchListener(mTouchListener);
         mPriceEditText.setOnTouchListener(mTouchListener);
         mQiantityEditText.setOnTouchListener(mTouchListener);
         mSupplierEditText.setOnTouchListener(mTouchListener);
         mPhoneEditText.setOnTouchListener(mTouchListener);
+        mProductImage.setOnTouchListener(mTouchListener);
     }
 
     private void AddOneToQuantity() {
@@ -165,6 +184,9 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
 
         String PhoneString = mPhoneEditText.getText().toString().trim();
 
+        String image;
+
+
         if (TextUtils.isEmpty(name) ||
                 TextUtils.isEmpty(Supplier) ||
                 TextUtils.isEmpty(PhoneString) ||
@@ -197,6 +219,15 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             values.put(ProductEntry.COLUMN_QUANTITY, Quantity);
             values.put(ProductEntry.COLUMN_SUPPLIER_NAME, Supplier);
             values.put(ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER, PhoneString);
+
+            if (actualUri == null) {
+                Log.i(LOGTAG, "Image uri path: null");
+            } else {
+                image = actualUri.toString();
+                values.put(ProductEntry.COLUMN_SUPPLIER_IMAGE, image);
+                Log.i(LOGTAG, "Image uri path: " + image);
+            }
+
 
             if (mCurrentProduct == null) {
 
@@ -303,7 +334,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         String[] projection = {_ID,
                 COLUMN_NAME, COLUMN_PRICE,
                 ProductEntry.COLUMN_QUANTITY, ProductEntry.COLUMN_SUPPLIER_NAME,
-                ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER};
+                ProductEntry.COLUMN_SUPPLIER_PHONE_NUMBER, ProductEntry.COLUMN_SUPPLIER_IMAGE};
 
         return new CursorLoader(this,
                 mCurrentProduct,
@@ -324,18 +355,24 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
             int quantityColumnIndex = cursor.getColumnIndex(COLUMN_QUANTITY);
             int supplierColumnIndex = cursor.getColumnIndex(COLUMN_SUPPLIER_NAME);
             int phoneColumnIndex = cursor.getColumnIndex(COLUMN_SUPPLIER_PHONE_NUMBER);
+            int imageColumnIndex = cursor.getColumnIndex(COLUMN_SUPPLIER_IMAGE);
 
             String name = cursor.getString(nameColumnIndex);
             String price = cursor.getString(priceColumnIndex);
             int quanitity = cursor.getInt(quantityColumnIndex);
             String supplier = cursor.getString(supplierColumnIndex);
             String phone = cursor.getString(phoneColumnIndex);
-
+            String image;
+            if (cursor.getString(imageColumnIndex) != null) {
+                image = cursor.getString(imageColumnIndex);
+                mProductImage.setImageURI(Uri.parse(image));
+            }
             mNameEditText.setText(name);
             mPriceEditText.setText(price);
             mQiantityEditText.setText(Integer.toString(quanitity));
             mSupplierEditText.setText(supplier);
             mPhoneEditText.setText(phone);
+
         }
     }
 
@@ -346,6 +383,7 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         mQiantityEditText.setText(Integer.toString(0));
         mSupplierEditText.setText(null);
         mPhoneEditText.setText(null);
+        mProductImage.setImageURI(null);
     }
 
     private void showDeleteConfirmationDialog() {
@@ -383,4 +421,33 @@ public class EditorActivity extends AppCompatActivity implements LoaderManager.L
         }
         finish();
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    ImagePicker.openImageSelector(EditorActivity.this);
+                    // permission was granted
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == Activity.RESULT_OK) {
+
+            if (data != null) {
+                actualUri = data.getData();
+                mProductImage.setImageURI(actualUri);
+                mProductImage.invalidate();
+            }
+        }
+    }
+
 }

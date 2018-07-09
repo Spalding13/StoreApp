@@ -23,6 +23,7 @@ public final class ProductContract {
         public static final String COLUMN_QUANTITY = "quantity";
         public static final String COLUMN_SUPPLIER_NAME = "supplier";
         public static final String COLUMN_SUPPLIER_PHONE_NUMBER = "number";
+        public static final String COLUMN_SUPPLIER_IMAGE = "image";
 
         public static boolean isValidPrice(int price) {
             if (price != 0 && price > 0) {
